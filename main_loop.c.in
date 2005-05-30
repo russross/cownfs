@@ -1,0 +1,256 @@
+/* Copyright 2004, 2005 Russ Ross
+ * See the file COPYING for information about licensing and distribution.  */
+
+#include "mount_prot.h"
+#include "nfs3_prot.h"
+#include "nfs3_prot_csrv.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <rpc/pmap_clnt.h>
+#include <string.h>
+#include <memory.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#include <caml/fail.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <assert.h>
+
+extern void mount_program_1(struct svc_req *, register SVCXPRT *);
+extern void mount_program_3(struct svc_req *, register SVCXPRT *);
+extern void nfs_program_3(struct svc_req *, register SVCXPRT *);
+
+CAMLprim value main_loop(value arg) {
+    register SVCXPRT *transp;
+
+    pmap_unset (MOUNT_PROGRAM, MOUNT_V3);
+    pmap_unset (NFS_PROGRAM, NFS_V3);
+
+    transp = svcudp_create(RPC_ANYSOCK);
+    if (transp == NULL) {
+        fprintf (stderr, "%s", "cannot create udp service.");
+        exit(1);
+    }
+    if (!svc_register(transp, MOUNT_PROGRAM, MOUNT_V3,
+                mount_program_3, IPPROTO_UDP))
+    {
+        fprintf (stderr, "%s",
+                "unable to register (MOUNT_PROGRAM, MOUNT_V3, udp).");
+        exit(1);
+    }
+    if (!svc_register(transp, NFS_PROGRAM, NFS_V3,
+                nfs_program_3, IPPROTO_UDP))
+    {
+        fprintf (stderr, "%s",
+                "unable to register (NFS_PROGRAM, NFS_V3, udp).");
+        exit(1);
+    }
+
+    transp = svctcp_create(RPC_ANYSOCK, 0, 0);
+    if (transp == NULL) {
+        fprintf (stderr, "%s", "cannot create tcp service.");
+        exit(1);
+    }
+    if (!svc_register(transp, MOUNT_PROGRAM, MOUNT_V3,
+                mount_program_3, IPPROTO_TCP))
+    {
+        fprintf (stderr, "%s",
+                "unable to register (MOUNT_PROGRAM, MOUNT_V3, tcp).");
+        exit(1);
+    }
+    if (!svc_register(transp, NFS_PROGRAM, NFS_V3,
+                nfs_program_3, IPPROTO_TCP))
+    {
+        fprintf (stderr, "%s",
+                "unable to register (NFS_PROGRAM, NFS_V3, tcp).");
+        exit(1);
+    }
+
+    svc_run ();
+    fprintf (stderr, "%s", "svc_run returned");
+    exit (1);
+    /* NOTREACHED */
+}
+
+value decode_credentials(struct svc_req *rqstp) {
+    CAMLparam0 ();
+    CAMLlocal3 (res, lst, elt);
+    int i;
+
+    struct authunix_parms *unix_cred;
+
+    switch (rqstp->rq_cred.oa_flavor) {
+        case AUTH_UNIX:
+            unix_cred = (struct authunix_parms *) rqstp->rq_clntcred;
+            res = alloc_tuple(3);
+            Store_field(res, 0, Val_int(unix_cred->aup_uid));
+
+            lst = Val_int(0);
+            for(i = unix_cred->aup_len - 1; i >= 0; i--) {
+                elt = alloc(2, 0);
+                Store_field(elt, 0, Val_int(unix_cred->aup_gids[i]));
+                Store_field(elt, 1, lst);
+                lst = elt;
+            }
+            elt = alloc(2, 0);
+            Store_field(elt, 0, Val_int(unix_cred->aup_gid));
+            Store_field(elt, 1, lst);
+            lst = elt;
+            Store_field(res, 1, lst);
+
+            Store_field(res, 2, copy_string(unix_cred->aup_machname));
+            break;
+        case AUTH_NULL:
+        default:
+            res = alloc_tuple(3);
+            Store_field(res, 0, Val_int(-1));
+            Store_field(res, 1, Val_int(0));
+            Store_field(res, 2, copy_string("unknown_authentication_type"));
+            break;
+    }
+
+    CAMLreturn (res);
+}
+
+CAMLprim value linux_lchown(value path, value uid, value gid) {
+    int ret;
+    ret = lchown(String_val(path), Int_val(uid), Int_val(gid));
+    if (ret < 0)
+        failwith("lchown");
+    return Val_unit;
+}
+
+CAMLprim value linux_create(value path, value uid, value gid, value mode,
+        value guarded)
+{
+    int flags;
+    int fd;
+    int res;
+    if (Int_val(guarded) != 0)
+        flags = O_CREAT | O_EXCL | O_TRUNC;
+    else
+        flags = O_CREAT | O_TRUNC;
+
+    fd = open(String_val(path), flags, Int_val(mode));
+    if (fd == -1)
+        return Val_int(errno);
+
+    res = fchown(fd, Int_val(uid), Int_val(gid));
+    if (res == -1) {
+        res = errno;
+        close(fd);
+        unlink(String_val(path));
+        return Val_int(res);
+    }
+
+    res = close(fd);
+    if (res == -1) {
+        res = errno;
+        unlink(String_val(path));
+        return Val_int(res);
+    }
+
+    return Val_int(0);
+}
+
+CAMLprim value linux_mknod(value path, value mode, value dev,
+      value uid, value gid)
+{
+    int res;
+
+    assert(sizeof(mode_t) == 4);
+    assert(sizeof(dev_t) == 8);
+
+    res = mknod(String_val(path), Int_val(mode), Int64_val(dev));
+    if (res == -1)
+        failwith("mknod");
+
+    res = lchown(String_val(path), Int_val(uid), Int_val(gid));
+    if (res == -1)
+        failwith("mknod");
+
+    return Val_unit;
+}
+
+CAMLprim value hash64(value str) {
+    long long result = 0LL;
+    unsigned char *end = (unsigned char *) String_val(str);
+    unsigned char *ptr = &end[string_length(str) - 1];
+    while (ptr >= end)
+        result = result * 73 + *ptr--;
+    return copy_int64(result);
+}
+
+int checkFd(void) {
+    static int last = -1;
+
+    int i, next, result = 0;
+
+    /* dup stdin to see what the next free fd is */
+    for (i = 0; i < 1; i++)
+        next = dup(1);
+    if (next == -1) {
+        fprintf(stderr, "dup failure in checkFd\n");
+        return -1;
+    }
+    if (last < 0) {
+        last = next;
+    } else if (next > last) {
+        fprintf(stderr, "checkFd: file descriptor leak detected: "
+                "next = %d, last = %d\n", next, last);
+        while (next > last)
+            close(next--);
+        result = 1;
+    }
+    for (i = 0; i < 1; i++)
+        close(next--);
+
+    return result;
+}
+
+#define BUFF_SIZE 2048
+CAMLprim value readdir3resok_length(value from) {
+    CAMLparam1 (from);
+    CAMLlocal1 (result);
+
+    XDR xdrs;
+    char buff[BUFF_SIZE];
+    readdir3resok to;
+
+    _of_readdir3resok(from, &to);
+    xdrmem_create(&xdrs, buff, BUFF_SIZE, XDR_ENCODE);
+    if (!xdr_readdir3resok(&xdrs, &to))
+        failwith("readdir3resok_length failed in xdr_readdir3resok");
+
+    result = Val_int(xdr_getpos(&xdrs));
+    xdr_free((xdrproc_t) xdr_readdir3resok, (char *) &to);
+    xdr_destroy(&xdrs);
+
+    CAMLreturn (result);
+} 
+
+CAMLprim value readdirplus3resok_length(value from) {
+    CAMLparam1 (from);
+    CAMLlocal1 (result);
+
+    XDR xdrs;
+    char buff[BUFF_SIZE];
+    readdirplus3resok to;
+
+    _of_readdirplus3resok(from, &to);
+    xdrmem_create(&xdrs, buff, BUFF_SIZE, XDR_ENCODE);
+    if (!xdr_readdirplus3resok(&xdrs, &to))
+        failwith("readdirplus3resok_length failed in xdr_readdirplus3resok");
+
+    result = Val_int(xdr_getpos(&xdrs));
+    xdr_free((xdrproc_t) xdr_readdirplus3resok, (char *) &to);
+    xdr_destroy(&xdrs);
+
+    CAMLreturn (result);
+} 

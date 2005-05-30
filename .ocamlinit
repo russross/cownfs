@@ -1,0 +1,16 @@
+#use "topfind";;
+#require "unix";;
+#load "rtypes.cmo";;
+#load "mount_prot_aux.cmo";;
+#load "nfs3_prot_aux.cmo";;
+#load "util.cmo";;
+#load "fh.cmo";;
+#load "common.cmo";;
+#load "fhCache.cmo";;
+#load "readdirCache.cmo";;
+#load "dirTree.cmo";;
+#load "lookup.cmo";;
+#load "mount_api.cmo";;
+#load "nfs_api.cmo";;
+#load "nfs_api_debug.cmo";;
+#load "csrv.cmo";;

@@ -1,0 +1,64 @@
+Copy-on-write NFS server
+========================
+
+This is a copy-on-write NFS server designed to allow dynamic
+stacking of filesystem hierarchies.  In a typical use, a user will
+mount a read-only base image (such as a standard Linux distribution
+installation) and a private, writable overlay.  Initially, the
+stacked filesystem will appear to be the same as the base image, but
+any changes made are captured in the private overlay, allowing the
+user to get the benefits of a private filesystem without having to
+start from scratch.
+
+This was designed for use with the XenoServers public computing
+platform, particularly to allow multiple virtual machines using the
+Xen hypervisor to run independently while sharing a common base
+filesystem.  This makes it easy and fast to launch a new virtual
+machine from an existing filesystem without worrying about write
+conflicts.
+
+The source code is written in Objective Caml (OCaml), which can be
+obtained from:
+
+http://caml.inria.fr/
+
+or it is available with most Linux distributions.  To build it, use
+make.  First change OCAMLINCLUDE in the Makefile to point to your
+OCaml library directory.  To build a native executable (the default)
+use:
+
+make opt
+
+To build a bytecode executable use:
+
+make bc
+
+In each case, the executable "cownfsd" is built, which can then be
+copied to any directory (there are no other dependencies in the
+build tree).
+
+For more information, see:
+
+http://www.russross.com/CoWNFS.html
+
+This daemon uses the standard C rpcgen and its accompanying
+libraries and generates code to interface between the RPC code and
+the OCaml code.  This generator is derived from the ocamlrpcgen
+library written by Gerd Stolpmann.  Unfortunately, ocamlrpcgen was a
+huge CPU hog that destroyed peformance and crashed regularly, so I
+don't use the library itself, but I did extend the code generator to
+produce my interface code.  The ocamlrpcgen library is also
+distributed under the GPL and can be found here:
+
+http://www.ocaml-programming.de/packages/documentation/rpc/
+
+This code is Copyright 2004, 2005 by Russ Ross and the latest
+release is available at the site referenced above.  It is
+distributed under the GPL; full details are available in the file
+COPYING.
+
+I can be contacted by the email address: russ at russross dot com.
+
+Note: this software was written for research purposes and has not
+been designed with rigorous security in mind.  It should only be
+used in trusted environments.

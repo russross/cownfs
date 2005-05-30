@@ -1,0 +1,52 @@
+rtypes.cmo: rtypes.cmi 
+rtypes.cmx: rtypes.cmi 
+mount_prot_caux.cmo: rtypes.cmi mount_prot_caux.cmi 
+mount_prot_caux.cmx: rtypes.cmx mount_prot_caux.cmi 
+nfs3_prot_caux.cmo: rtypes.cmi nfs3_prot_caux.cmi 
+nfs3_prot_caux.cmx: rtypes.cmx nfs3_prot_caux.cmi 
+util.cmo: nfs3_prot_caux.cmi rtypes.cmi util.cmi 
+util.cmx: nfs3_prot_caux.cmx rtypes.cmx util.cmi 
+fh.cmo: util.cmi fh.cmi 
+fh.cmx: util.cmx fh.cmi 
+common.cmo: fh.cmi common.cmi 
+common.cmx: fh.cmx common.cmi 
+fhCache.cmo: common.cmi fh.cmi util.cmi fhCache.cmi 
+fhCache.cmx: common.cmx fh.cmx util.cmx fhCache.cmi 
+readdirCache.cmo: common.cmi fh.cmi util.cmi readdirCache.cmi 
+readdirCache.cmx: common.cmx fh.cmx util.cmx readdirCache.cmi 
+dirTree.cmo: common.cmi fh.cmi fhCache.cmi util.cmi dirTree.cmi 
+dirTree.cmx: common.cmx fh.cmx fhCache.cmx util.cmx dirTree.cmi 
+lookup.cmo: common.cmi dirTree.cmi fhCache.cmi nfs3_prot_caux.cmi \
+    readdirCache.cmi util.cmi lookup.cmi 
+lookup.cmx: common.cmx dirTree.cmx fhCache.cmx nfs3_prot_caux.cmx \
+    readdirCache.cmx util.cmx lookup.cmi 
+mount_api.cmo: common.cmi fh.cmi mount_prot_caux.cmi rtypes.cmi util.cmi \
+    mount_api.cmi 
+mount_api.cmx: common.cmx fh.cmx mount_prot_caux.cmx rtypes.cmx util.cmx \
+    mount_api.cmi 
+nfs_api.cmo: common.cmi fh.cmi lookup.cmi nfs3_prot_caux.cmi rtypes.cmi \
+    util.cmi nfs_api.cmi 
+nfs_api.cmx: common.cmx fh.cmx lookup.cmx nfs3_prot_caux.cmx rtypes.cmx \
+    util.cmx nfs_api.cmi 
+nfs_api_debug.cmo: common.cmi fh.cmi lookup.cmi nfs3_prot_caux.cmi \
+    nfs_api.cmi rtypes.cmi nfs_api_debug.cmi 
+nfs_api_debug.cmx: common.cmx fh.cmx lookup.cmx nfs3_prot_caux.cmx \
+    nfs_api.cmx rtypes.cmx nfs_api_debug.cmi 
+csrv.cmo: mount_api.cmi mount_prot_caux.cmi nfs3_prot_caux.cmi nfs_api.cmi \
+    nfs_api_debug.cmi rtypes.cmi csrv.cmi 
+csrv.cmx: mount_api.cmx mount_prot_caux.cmx nfs3_prot_caux.cmx nfs_api.cmx \
+    nfs_api_debug.cmx rtypes.cmx csrv.cmi 
+mount_prot_caux.cmi: rtypes.cmi 
+nfs3_prot_caux.cmi: rtypes.cmi 
+util.cmi: rtypes.cmi 
+common.cmi: fh.cmi 
+fhCache.cmi: common.cmi fh.cmi 
+readdirCache.cmi: common.cmi fh.cmi 
+dirTree.cmi: common.cmi fh.cmi fhCache.cmi 
+lookup.cmi: common.cmi fh.cmi 
+mount_api.cmi: common.cmi lookup.cmi mount_prot_caux.cmi 
+nfs_api.cmi: common.cmi lookup.cmi nfs3_prot_caux.cmi 
+nfs_api_debug.cmi: common.cmi lookup.cmi nfs3_prot_caux.cmi 
+csrv.cmi: lookup.cmi nfs3_prot_caux.cmi 
+cownfsd.cmo: csrv.cmi lookup.cmi nfs_api.cmi nfs_api_debug.cmi 
+cownfsd.cmx: csrv.cmx lookup.cmx nfs_api.cmx nfs_api_debug.cmx 

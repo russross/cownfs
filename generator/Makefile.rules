@@ -1,0 +1,41 @@
+# How to invoke compilers and tools:
+
+OCAMLC    = $(OCAMLFIND) ocamlc -g $(OCAMLC_OPTIONS) -package "$(PACKAGES)"
+OCAMLOPT  = $(OCAMLFIND) ocamlopt $(OCAMLOPT_OPTIONS) -package "$(PACKAGES)"
+OCAMLDEP  = ocamldep $(OCAMLDEP_OPTIONS)
+OCAMLFIND = ocamlfind
+OCAMLYACC = ocamlyacc
+OCAMLLEX  = ocamllex
+
+TOOLS_DIR = $(TOP_DIR)/tools
+
+COLLECT_FILES = $(TOOLS_DIR)/collect_files
+
+# Files to remove everywhere by "make clean":
+
+CLEAN_LIST = *.cmi *.cmo *.cma *.cmx *.o *.a *.cmxa dll* \
+	     *.astamp *.cstamp *.sstamp \
+	     *_aux.mli *_aux.ml *_clnt.mli *_clnt.ml *_srv.mli *_srv.ml
+
+# Generic build rules:
+
+.SUFFIXES: .cmo .cmi .cmx .ml .mli .mll .mly .c .o
+
+.ml.cmx:
+	$(OCAMLOPT) -c $<
+
+.ml.cmo:
+	$(OCAMLC) -c $<
+
+.mli.cmi:
+	$(OCAMLC) -c $<
+
+.mll.ml:
+	$(OCAMLLEX) $<
+
+.mly.ml:
+	$(OCAMLYACC) $<
+
+.c.o:
+	$(OCAMLC) -c $<
+

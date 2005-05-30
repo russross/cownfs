@@ -1,0 +1,21 @@
+cgen.cmo: generate.cmo syntax.cmo 
+cgen.cmx: generate.cmx syntax.cmx 
+generate.cmo: rtypes.cmi syntax.cmo 
+generate.cmx: rtypes.cmx syntax.cmx 
+lexer.cmo: parser.cmi 
+lexer.cmx: parser.cmx 
+main.cmo: cgen.cmo generate.cmo lexer.cmo options.cmo parser.cmi rename.cmo \
+    syntax.cmo 
+main.cmx: cgen.cmx generate.cmx lexer.cmx options.cmx parser.cmx rename.cmx \
+    syntax.cmx 
+options.cmo: syntax.cmo 
+options.cmx: syntax.cmx 
+parser.cmo: options.cmo syntax.cmo parser.cmi 
+parser.cmx: options.cmx syntax.cmx parser.cmi 
+rename.cmo: syntax.cmo 
+rename.cmx: syntax.cmx 
+rtypes.cmo: rtypes.cmi 
+rtypes.cmx: rtypes.cmi 
+syntax.cmo: rtypes.cmi 
+syntax.cmx: rtypes.cmx 
+parser.cmi: syntax.cmo 
