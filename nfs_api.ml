@@ -787,33 +787,43 @@ let commit map session arg name info readinfo = raise Unimplemented
 let create map session arg path old wcc =
   (* permissions check happens in the wrapper *)
   if not (Util.validateName arg.where.name) then raise Acces else
-  let guardtype =
-    (match arg.how with
-    | `unchecked _ -> 0
-    | `guarded _ -> 1
-    | `exclusive _ -> 2)
+  (* check exclusive create conditions *)
+  let matchedcookie =
+    begin
+      match (old, arg.how) with
+      | (Some (oldpath, oldinfo), `exclusive a) when path = oldpath ->
+        if oldinfo.st_kind <> S_REG then raise Exist else
+        (* the cookie is placed in the atime and mtime fields, so to check it
+         * we need to munge the cookie to match the form returned by lstat *)
+        let (cookie1, cookie2) =
+            (Int32.to_float (Rtypes.int32_of_int4 (Rtypes.read_int4 a 0)),
+             Int32.to_float (Rtypes.int32_of_int4 (Rtypes.read_int4 a 4)))
+        in
+        if cookie1 = oldinfo.st_atime && cookie2 = oldinfo.st_mtime
+          then true
+          else raise Exist
+      | (Some (oldpath, oldinfo), `guarded _)
+          when path = oldpath -> raise Exist
+      | (Some (oldpath, oldinfo), `unchecked _)
+          when path = oldpath && oldinfo.st_kind <> S_REG -> raise Exist
+      | _ -> false
+    end
   in
-  begin
-    match old with
-    | Some (oldpath, oldinfo) ->
-      (* TODO: exclusive should check if the file exists with matching cookie *)
-      if path = oldpath && (guardtype > 0 || oldinfo.st_kind <> S_REG)
-        then raise Exist
-    | None -> ()
-  end;
   let (uid, gid) =
     (match (user session) with
     | (uid, gid :: _, _) -> (uid, gid)
     | _ -> raise Perm)
   in
-  let (data1, data2) =
+  let (data1, data2, guardtype) =
     (match arg.how with
-    | `unchecked a
-    | `guarded a -> (Int32.of_int (file_perm_of_sattr3 a), 0l)
+    | `unchecked a -> (Int32.of_int (file_perm_of_sattr3 a), 0l, 0)
+    | `guarded a -> (Int32.of_int (file_perm_of_sattr3 a), 0l, 1)
     | `exclusive a -> (Rtypes.int32_of_int4 (Rtypes.read_int4 a 0),
-                       Rtypes.int32_of_int4 (Rtypes.read_int4 a 4)))
+                       Rtypes.int32_of_int4 (Rtypes.read_int4 a 4), 2))
   in
-  let res = Util.create path uid gid guardtype data1 data2 in
+  let res = if matchedcookie then 0
+            else Util.create path uid gid guardtype data1 data2
+  in
   if res <> 0 then raise Perm else
   remove_mask path;
   let dirFake = L.fhToFake map (s2fh arg.where.dir.data) in
@@ -931,7 +941,13 @@ let mknod map session arg path old wcc =
           Util.mknod path (mode lor 0o10000) Int64.zero uid gid
         with Failure _ -> raise Acces
       end
-    | `nf3sock _ -> raise Notsupp
+    | `nf3sock attr ->
+      begin
+        let (uid, gid, mode) = decode_sattr3 user attr in
+        try
+          Util.mknod path (mode lor 0o140000) Int64.zero uid gid
+        with Failure _ -> raise Acces
+      end
     | _ -> raise Bad_type
   end;
   remove_mask path;
