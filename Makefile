@@ -1,14 +1,14 @@
-OCAMLFIND=ocamlfind
 OCAMLC=ocamlc -g -warn-error Ae
 OCAMLOPT=ocamlopt -warn-error Ae
 OCAMLRPCGEN=generator/ocamlrpcgen
 OCAMLDEP=ocamldep
 OCAMLMKTOP=ocamlmktop
-OCAMLINCLUDE=/homes/rgr22/ocaml/lib/ocaml
+OCAMLINCLUDE=$(HOME)/lib/ocaml
 CC=gcc
 CCOPTS=-g -Werror -Wall -Wno-unused-variable -malign-double
 
-PACKAGES= -package unix
+PACKAGES_BC= unix.cma
+PACKAGES_OPT= unix.cmxa
 
 MOUNT_RPC= mount_prot.x
 MOUNT_STEMS= $(MOUNT_RPC:.x=_caux)
@@ -43,7 +43,7 @@ bc:     $(TARGETSBC)
 	mv cownfsd.bc cownfsd
 
 top:    $(MODULES:=.cmo)
-	$(OCAMLFIND) $(OCAMLMKTOP) -o top $(MODULES:=.cmo) $(PACKAGES)
+	$(OCAMLMKTOP) -o top $(PACKAGES_BC) $(MODULES:=.cmo)
 
 $(OCAMLRPCGEN): generator/cgen.ml generator/main.ml
 	make -C generator/
@@ -61,19 +61,19 @@ COBJS=	nfs3_prot_csrv nfs3_prot_server nfs3_prot_xdr nfs3_prot_svc \
 NFSD_OBJ= rtypes $(RPC_STEMS) util fh common fhCache readdirCache dirTree lookup mount_api nfs_api nfs_api_debug csrv cownfsd
 
 cownfsd: $(NFSD_OBJ:=.cmx) $(NFSD_OBJ:=.o) $(COBJS:=.o)
-	$(OCAMLFIND) $(OCAMLOPT) -o $@ $(COBJS:=.o) $(NFSD_OBJ:=.cmx) $(PACKAGES) -linkpkg
+	$(OCAMLOPT) -o $@ $(PACKAGES_OPT) $(COBJS:=.o) $(NFSD_OBJ:=.cmx)
 
 cownfsd.bc: $(NFSD_OBJ:=.cmo) $(COBJS:=.o)
-	$(OCAMLFIND) $(OCAMLC) -o $@ $(COBJS:=.o) $(NFSD_OBJ:=.cmo) $(PACKAGES) -linkpkg -custom
+	$(OCAMLC) -custom -o $@ $(PACKAGES_BC) $(COBJS:=.o) $(NFSD_OBJ:=.cmo)
 
 %.cmi: %.mli
-	$(OCAMLFIND) $(OCAMLC) -c $< $(PACKAGES)
+	$(OCAMLC) -c $<
 
 %.cmo: %.ml
-	$(OCAMLFIND) $(OCAMLC) -c $< $(PACKAGES)
+	$(OCAMLC) -c $< $(PACKAGES)
 
 %.cmx: %.ml
-	$(OCAMLFIND) $(OCAMLOPT) -c $< $(PACKAGES)
+	$(OCAMLOPT) -c $< $(PACKAGES)
 
 %.o: %.c
 	$(CC) $(CCOPTS) -c $< -I $(OCAMLINCLUDE)

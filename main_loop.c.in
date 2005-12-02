@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <utime.h>
 #include <errno.h>
 #include <assert.h>
 
@@ -126,18 +127,31 @@ CAMLprim value linux_lchown(value path, value uid, value gid) {
     return Val_unit;
 }
 
-CAMLprim value linux_create(value path, value uid, value gid, value mode,
-        value guarded)
+/* guardtype: 0 = unchecked, 1 = guarded, 2 = exclusive
+ * for guardtype {0,1}: data1 = mode
+ * for guardtype 2: data1 = atime, data2 = mtime
+ */
+CAMLprim value linux_create_opt(value path, value uid, value gid,
+        value guardtype, value data1, value data2)
 {
     int flags;
+    int mode;
     int fd;
     int res;
-    if (Int_val(guarded) != 0)
-        flags = O_CREAT | O_EXCL | O_TRUNC;
-    else
-        flags = O_CREAT | O_TRUNC;
+    struct utimbuf timebuf;
 
-    fd = open(String_val(path), flags, Int_val(mode));
+    if (Int_val(guardtype) == 0) {
+        flags = O_CREAT | O_TRUNC;
+        mode = Int32_val(data1);
+    } else if (Int_val(guardtype) == 1) {
+        flags = O_CREAT | O_EXCL | O_TRUNC;
+        mode = Int32_val(data1);
+    } else {
+        flags = O_CREAT | O_EXCL | O_TRUNC;
+        mode = 0;
+    }
+
+    fd = open(String_val(path), flags, mode);
     if (fd == -1)
         return Val_int(errno);
 
@@ -156,7 +170,23 @@ CAMLprim value linux_create(value path, value uid, value gid, value mode,
         return Val_int(res);
     }
 
+    if (Int_val(guardtype) == 2) {
+        timebuf.actime = Int32_val(data1);
+        timebuf.modtime = Int32_val(data2);
+        res = utime(String_val(path), &timebuf);
+        if (res == -1) {
+            res = errno;
+            unlink(String_val(path));
+            return Val_int(res);
+        }
+    }
+
     return Val_int(0);
+}
+
+CAMLprim value linux_create_bc(value * argv, int argn) {
+    return linux_create_opt(argv[0], argv[1], argv[2], argv[3],
+                            argv[4], argv[5]);
 }
 
 CAMLprim value linux_mknod(value path, value mode, value dev,

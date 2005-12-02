@@ -68,8 +68,8 @@ let fileid_of_name name =
 let nfs_time sec =
   let (frac, whole) = modf sec in
   let nano = frac *. 1000000000.0 in
-  { seconds = Rtypes.uint4_of_int32 (Int32.of_float (whole +. 0.5));
-    nseconds = Rtypes.uint4_of_int32 (Int32.of_float (nano +. 0.5)) }
+  { seconds = Rtypes.logical_uint4_of_int32 (Int32.of_float (whole +. 0.5));
+    nseconds = Rtypes.logical_uint4_of_int32 (Int32.of_float (nano +. 0.5)) }
 
 let float_of_nfs_time nfstime =
   match nfstime with { seconds = s; nseconds = ns } ->
@@ -370,12 +370,12 @@ let unixerr err arg =
   | _                           -> `nfs3err_serverfault arg
 
 let handle_exp exp res =
-(*
+
   if exp <> Noent then
     begin
       prerr_endline ("*** exception "^(Printexc.to_string exp))
     end;
-*)
+
   match exp with
   | Noent                       -> `nfs3err_noent res
   | Notdir                      -> `nfs3err_notdir res
@@ -402,7 +402,9 @@ let hide_fh_name map session fh name =
     begin
       let (uid, gids, hostname) = user session in
       create_shadow_dirs map (uid, gids, hostname) path (FhName (fh, name));
-      let res = Util.create path uid (List.hd gids) default_perm false in
+      let res =
+          Util.create path uid (List.hd gids) 0 (Int32.of_int default_perm) 0l
+      in
       if res <> 0 then raise Hide_failed
     end
   | (true, None) -> raise Hide_failed
@@ -785,16 +787,17 @@ let commit map session arg name info readinfo = raise Unimplemented
 let create map session arg path old wcc =
   (* permissions check happens in the wrapper *)
   if not (Util.validateName arg.where.name) then raise Acces else
-  let (guarded, attrs) =
+  let guardtype =
     (match arg.how with
-    | `guarded a -> (true, a)
-    | `unchecked a -> (false, a)
-    | _ -> raise Notsupp)
+    | `unchecked _ -> 0
+    | `guarded _ -> 1
+    | `exclusive _ -> 2)
   in
   begin
     match old with
     | Some (oldpath, oldinfo) ->
-      if path = oldpath && (guarded || oldinfo.st_kind <> S_REG)
+      (* TODO: exclusive should check if the file exists with matching cookie *)
+      if path = oldpath && (guardtype > 0 || oldinfo.st_kind <> S_REG)
         then raise Exist
     | None -> ()
   end;
@@ -803,7 +806,14 @@ let create map session arg path old wcc =
     | (uid, gid :: _, _) -> (uid, gid)
     | _ -> raise Perm)
   in
-  let res = Util.create path uid gid (file_perm_of_sattr3 attrs) guarded in
+  let (data1, data2) =
+    (match arg.how with
+    | `unchecked a
+    | `guarded a -> (Int32.of_int (file_perm_of_sattr3 a), 0l)
+    | `exclusive a -> (Rtypes.int32_of_int4 (Rtypes.read_int4 a 0),
+                       Rtypes.int32_of_int4 (Rtypes.read_int4 a 4)))
+  in
+  let res = Util.create path uid gid guardtype data1 data2 in
   if res <> 0 then raise Perm else
   remove_mask path;
   let dirFake = L.fhToFake map (s2fh arg.where.dir.data) in

@@ -16,7 +16,8 @@ val filename : string -> string
 val concatPath : string -> string -> string
 val validateName : string -> bool
 external lchown : string -> int -> int -> unit = "linux_lchown"
-external create : string -> int -> int -> int -> bool -> int = "linux_create"
+external create : string -> int -> int -> int -> int32 -> int32 -> int
+        = "linux_create_bc" "linux_create_opt"
 external mknod : string -> int -> int64 -> int -> int -> unit = "linux_mknod"
 external hash64 : string -> Rtypes.uint8 = "hash64"
 val readdir_set : int * int * int * int -> unit

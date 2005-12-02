@@ -68,7 +68,8 @@ let validateName name =
 
 external lchown : string -> int -> int -> unit = "linux_lchown"
 
-external create : string -> int -> int -> int -> bool -> int = "linux_create"
+external create : string -> int -> int -> int -> Int32.t -> Int32.t -> int
+        = "linux_create_bc" "linux_create_opt"
 
 external mknod : string -> int -> Int64.t -> int -> int -> unit = "linux_mknod"
 
