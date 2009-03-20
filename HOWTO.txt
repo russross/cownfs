@@ -1,0 +1,70 @@
+Note: this is wiki source, so the formatting is a little weird.
+
+Copy-on-write NFS server
+Tue,  7 Jun 2005 16:26:17 +0100
+Thu,  5 Jan 2006 16:48:54 +0000
+index
+
+---
+.box
++ Copy-on-write NFS server
+
+I wrote a copy-on-write NFS daemon for use with the [http://www.cl.cam.ac.uk/Research/SRG/netos/xeno/ XenoServers] project. It's a general purpose userspace NFS daemon with the ability to dynamically stack file hierarchies over each other. Different layers can be configured as writable or as read-only, and in the latter case changes are made to a writable overlay in a copy-on-write fashion.
+
+Some more information is available in a  [http://www.cl.cam.ac.uk/Research/SRG/netos/papers/2004-deploy-worlds.pdf paper from WORLDS'04] (PDF format).
+
+++ Example
+A simple example illustrates the basic idea.
+* Install a pristine Linux kernel source tree in ##/usr/src/linux##
+* Create an empty directory ##/home/russ/testpatches##
+* Start ##cownfsd## with ##/home/russ/testpatches## as the root exported directory and mount it at ##/mnt/cow##
+* Note: the path you give to ##mount## is relative to the path you specify to ##cownfsd##, so in this example I would have issued these two commands, where ##localhost:/## refers to the root exported directory (##/home/russ/testpatches##) and ##/mnt/cow## is the mount point:
+*# ##cownfsd /home/russ/testpatches &##
+*# ##mount -t nfs localhost:/ /mnt/cow##
+* Create a subdirectory ##/home/russ/testpatches/linux1##
+* Create a file called ##.mount## in the ##linux1## directory with the single line:<br/>##read "/usr/src/linux"##
+* The directory ##/mnt/cow/linux1## is immediately populated with the complete contents of the ##/usr/src/linux## directory.
+* Make changes within ##/mnt/cow/linux1##, say running ##make~config##
+* All new and modified files are updated in a sparsely created directory structure rooted at ##/home/russ/testpatches/linux1##. A deleted file ''foo'' is marked by the creation of an empty file called ''.~~foo''
+
+Similarly, you could create a new directory called ##/home/russ/testpatches/linux2## which would be visible as ##/mnt/cow/linux2## and could mount the same read-only base image (##/usr/src/linux##). Changes made in the two directories are completely isolated from each other.
+
+This was written originally for use with [http://www.cl.cam.ac.uk/Research/SRG/netos/xen/index.html Xen]. Multiple domains can use overlays to create custom versions of a common root filesystem, which they can then use for booting. This lets multiple concurrent domains share the same root image by booting over NFS with customized overlays.
+
+++ Basic rules
+* Mounts can be many levels deep, and each layer can be read-only or writable
+* The top layer must always be writable (though file permissions may still prevent writes from succeeding), and files in higher levels ''mask'' files in lower levels.
+* A file called ##.~~##''name'' in a higher level hides a file called ''name'' in a lower level.
+* Every file is ''visible'' from exactly one layer (copy-on-write works at the whole-file level)
+* If the visible instance of a file is in a writeable layer, then all writes are made directly to it. If the visible layer is readonly, then the first write to the file triggers a copy to the top level which then becomes the visible instance of the file.
+* New files are always created in the top writable directory
+* Entries in ##.mount## files are one per line. A ##.mount## file can exist in any directory, and affects all subdirectories recursively.
+* ##.mount## file entries can be one of three types:
+*# ##read "##''/readonly/path''##"##
+*# ##write "##''/writeable/path''##"##
+*# ##replace "##''/writable/path''##"##
+* Later entries in a ##.mount## file are layered on top of earlier entries. The directory containing the ##.mount## file is always layered on top as writeable, except when the last entry uses ##replace##.
+.end
+
+.box
++ Common problems
+The most common problem people have reported to me is a failure to mount properly.  The main symptom is a bunch of errors having to do with stale file handles showing up either at mount time or immediately after.
+
+The solution to this problem is usually to kill any other ##mountd## processes running on the same machine.  ##cownfsd## provides its own Mount service, and the NFS service only works with it.
+
+Mount and NFS services are closely tied together (NFSv4 combines them into a single service).  The Mount service returns a file handle identifying the root directory of the mount point, which is later passed to the NFS service as a reference point for future operations.  The structure of the file handle is unique to a particular NFS implementation so the services responding to Mount and NFS requests must be matched.  In particular, the standard kernel NFS implementation uses a file's ##inode## number as the main part of its file handle, which doesn't really work with a userspace daemon like ##cownfsd##.
+
+The version problem also manifests itself when booting over an NFS-mounted file system (a very useful thing to do with ##cownfsd## in a Xen environment).  If you are planning to boot Linux from a ##cownfsd## volume, be sure to add ##,v3## to the end of the ##nfsroot## line in your boot parameter list.
+.end
+
+.box
++ Getting CoWNFSd
+The server is written in OCaml and the source is available under the GPL.
+
+* The source can be downloaded [data/cownfs.tar.gz here] (~~73k)
+* In case you don't have OCaml, a compiled (and ##gzip## compressed) Linux binary can be downloaded [data/cownfsd.gz here] (~~280k)
+
+If you have questions, find it useful, or have any general comments, please contact me by email:
+
+[{/doc/emailaddress.png}]
+.end
