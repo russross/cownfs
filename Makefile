@@ -1,11 +1,11 @@
-OCAMLC=ocamlc -g -warn-error Ae
-OCAMLOPT=ocamlopt -warn-error Ae
+OCAMLC=ocamlc -g
+OCAMLOPT=ocamlopt
 OCAMLRPCGEN=generator/ocamlrpcgen
 OCAMLDEP=ocamldep
 OCAMLMKTOP=ocamlmktop
 OCAMLINCLUDE=$(HOME)/lib/ocaml
 CC=gcc
-CCOPTS=-g -Werror -Wall -Wno-unused-variable -malign-double
+CCOPTS=-g -Wall -Wno-unused-variable -malign-double
 
 PACKAGES_BC= unix.cma
 PACKAGES_OPT= unix.cmxa
