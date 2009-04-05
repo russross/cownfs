@@ -1,4 +1,5 @@
 Note: this is wiki source, so the formatting is a little weird.
+See: http://russross.github.com/cownfs/ for an HTML formatted version
 
 Copy-on-write NFS server
 Tue,  7 Jun 2005 16:26:17 +0100
