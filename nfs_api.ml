@@ -460,7 +460,7 @@ let read map session arg name info fake =
   let fp = openfile name [O_RDONLY] 0 in
   (try
     readres :=
-        (let pos = lseek fp start SEEK_SET in
+        (let (*pos*) _ = lseek fp start SEEK_SET in
         Unix.read fp buff 0 len);
     close fp
   with e -> close fp; raise e);
@@ -579,7 +579,7 @@ let readdir map session arg name info fake =
       | Elt (prefix, fname, cookie, next) ->
           (* compute the fh of the entry to force it into the cache *)
           let newFake = Util.concatPath fake fname in
-          let fh' = L.fakeToNewFh map newFake in
+          let (*fh'*) _ = L.fakeToNewFh map newFake in
           Some { fileid' = fileid_of_name newFake;
                  name' = fname;
                  cookie' = cookie;
@@ -765,7 +765,7 @@ let write map session arg name info readinfo fake =
   let fp = openfile name [O_WRONLY] 0 in
   (try
     writeres :=
-      (let pos = lseek fp (Rtypes.int64_of_uint8 arg.offset') SEEK_SET in
+      (let (*pos*) _ = lseek fp (Rtypes.int64_of_uint8 arg.offset') SEEK_SET in
       Unix.write fp arg.data''' 0 len);
     close fp
   with e -> close fp; raise e);

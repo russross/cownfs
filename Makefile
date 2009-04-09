@@ -1,5 +1,5 @@
-OCAMLC=ocamlc -g
-OCAMLOPT=ocamlopt
+OCAMLC=ocamlc -g -warn-error Ae
+OCAMLOPT=ocamlopt -warn-error Ae
 OCAMLRPCGEN=generator/ocamlrpcgen
 OCAMLDEP=ocamldep
 OCAMLMKTOP=ocamlmktop

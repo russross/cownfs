@@ -241,15 +241,15 @@ let init state debug =
   let boolean = false in
   let int4 = Rtypes.int4_of_int 0 in
   let uint64 = Rtypes.uint8_of_int 0 in
-  let int64 = Rtypes.int8_of_int 0 in
+(*  let int64 = Rtypes.int8_of_int 0 in *)
   let uint32 = Rtypes.uint4_of_int 0 in
-  let int32 = Rtypes.int4_of_int 0 in
+(*  let int32 = Rtypes.int4_of_int 0 in *)
   let filename3 = str in
   let nfspath3 = str in
   let cookieverf3 = str in
-  let createverf3 = str in
+(*  let createverf3 = str in *)
   let writeverf3 = str in
-  let nfsstat3 = int4 in
+(*  let nfsstat3 = int4 in *)
   let ftype3 = int4 in
   let specdata3 = 
         { 
@@ -297,8 +297,7 @@ let init state debug =
   let post_op_fh3 = `False in
   let set_uint32 = `False in
   let set_uint64 = `False in
-  let time_how = 
-        int4 in
+(*  let time_how = int4 in *)
   let set_time = `dont_change in
   let sattr3 = 
         { 
@@ -320,9 +319,9 @@ let init state debug =
           obj_attributes = post_op_attr;
           dir_wcc = wcc_data;
         } in
-  let diropres3 = `nfs3_ok diropres3ok in
-  let wccstat3 = `nfs3_neg_one in
-  let getattr3res = `nfs3_neg_one  in
+(*  let diropres3 = `nfs3_ok diropres3ok in *)
+(*  let wccstat3 = `nfs3_neg_one in *)
+(*  let getattr3res = `nfs3_neg_one  in *)
   let sattrguard3 = `False in
   let setattr3args = 
         { 
@@ -336,7 +335,7 @@ let init state debug =
           obj_attributes' = post_op_attr;
           dir_attributes = post_op_attr;
         } in
-  let lookup3res = `nfs3_ok lookup3resok in
+(*  let lookup3res = `nfs3_ok lookup3resok in *)
   let access3args = 
         { 
           object''' = nfs_fh3;
@@ -347,13 +346,13 @@ let init state debug =
           obj_attributes'' = post_op_attr;
           access' = uint32;
         } in
-  let access3res = `nfs3_ok access3resok in
+(*  let access3res = `nfs3_ok access3resok in *)
   let readlink3resok = 
         { 
           symlink_attributes = post_op_attr;
           data' = nfspath3;
         } in
-  let readlink3res = `nfs3_ok readlink3resok in
+(*  let readlink3res = `nfs3_ok readlink3resok in *)
   let read3args = 
         { 
           file = nfs_fh3;
@@ -367,7 +366,7 @@ let init state debug =
           eof = boolean;
           data'' = str;
         } in
-  let read3res = `nfs3_ok read3resok in
+(*  let read3res = `nfs3_ok read3resok in *)
   let stable_how = 
         int4 in
   let write3args = 
@@ -385,9 +384,8 @@ let init state debug =
           committed = stable_how;
           verf = writeverf3;
         } in
-  let write3res = `nfs3_ok write3resok in
-  let createmode3 = 
-        int4 in
+(*  let write3res = `nfs3_ok write3resok in *)
+(*  let createmode3 = int4 in *)
   let createhow3 = `unchecked sattr3 in
   let create3args = 
         { 
@@ -430,7 +428,7 @@ let init state debug =
           fromdir_wcc = wcc_data;
           todir_wcc = wcc_data;
         } in
-  let rename3res = `nfs3_neg_one in
+(*  let rename3res = `nfs3_neg_one in *)
   let link3args = 
         { 
           file'' = nfs_fh3;
@@ -441,7 +439,7 @@ let init state debug =
           file_attributes' = post_op_attr;
           linkdir_wcc = wcc_data;
         } in
-  let link3res = `nfs3_neg_one  in
+(*  let link3res = `nfs3_neg_one  in *)
   let readdir3args = 
         { 
           dir' = nfs_fh3;
@@ -467,7 +465,7 @@ let init state debug =
           cookieverf' = cookieverf3;
           reply = dirlist3;
         } in
-  let readdir3res = `nfs3_ok readdir3resok in
+(*  let readdir3res = `nfs3_ok readdir3resok in *)
   let readdirplus3args = 
         { 
           dir'' = nfs_fh3;
@@ -496,7 +494,7 @@ let init state debug =
           cookieverf''' = cookieverf3;
           reply' = dirlistplus3;
         } in
-  let readdirplus3res = `nfs3_ok readdirplus3resok in
+(*  let readdirplus3res = `nfs3_ok readdirplus3resok in *)
   let fsstat3resok = 
         { 
           obj_attributes''' = post_op_attr;
@@ -508,7 +506,7 @@ let init state debug =
           afiles = uint64;
           invarsec = uint32;
         } in
-  let fsstat3res = `nfs3_ok fsstat3resok in
+(*  let fsstat3res = `nfs3_ok fsstat3resok in *)
   let fsinfo3resok = 
         { 
           obj_attributes'''' = post_op_attr;
@@ -523,7 +521,7 @@ let init state debug =
           time_delta = nfstime3;
           properties = uint32;
         } in
-  let fsinfo3res = `nfs3_ok fsinfo3resok in
+(*  let fsinfo3res = `nfs3_ok fsinfo3resok in *)
   let pathconf3resok = 
         { 
           obj_attributes''''' = post_op_attr;
@@ -534,7 +532,7 @@ let init state debug =
           case_insensitive = boolean;
           case_preserving = boolean;
         } in
-  let pathconf3res = `nfs3_ok pathconf3resok in
+(*  let pathconf3res = `nfs3_ok pathconf3resok in *)
   let commit3args = 
         { 
           file''' = nfs_fh3;
@@ -546,22 +544,21 @@ let init state debug =
           file_wcc' = wcc_data;
           verf' = writeverf3;
         } in
-  let commit3res = `nfs3_ok commit3resok
-  in
+(*  let commit3res = `nfs3_ok commit3resok in *)
 
   (* mount_prot types *)
-  let fhandle2 = str in
+(*  let fhandle2 = str in *)
   let fhandle3 = str in
   let dirpath = str in
   let name = str in
-  let fhstatus = `_0 fhandle2 in
-  let mountstat3 = int4 in
+(*  let fhstatus = `_0 fhandle2 in *)
+(*  let mountstat3 = int4 in *)
   let mountres3_ok = 
         { 
           fhandle = fhandle3;
           auth_flavors = [||];
         } in
-  let mountres3 = `mnt3err_perm in
+(*  let mountres3 = `mnt3err_perm in *)
   let mountlist = None in
   let mountbody = 
         { 
